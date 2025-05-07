@@ -24,26 +24,41 @@ export default function RootLayout() {
     "Inter-Bold": Inter_700Bold,
   });
 
-  // Hide splash screen once fonts are loaded
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
-  // Return null to keep splash screen visible while fonts load
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
       <StatusBar style="auto" />
+      <Stack>
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false,
+            animation: 'fade'
+          }} 
+        />
+        <Stack.Screen 
+          name="auth" 
+          options={{ 
+            headerShown: false,
+            animation: 'slide_from_right' 
+          }} 
+        />
+        <Stack.Screen 
+          name="+not-found" 
+          options={{ 
+            animation: 'fade' 
+          }} 
+        />
+      </Stack>
     </AuthProvider>
   );
 }

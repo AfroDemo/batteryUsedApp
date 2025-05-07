@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthGuard } from "@/components/AuthGuard";
 import { Stack } from "expo-router";
 
 export default function AuthLayout() {

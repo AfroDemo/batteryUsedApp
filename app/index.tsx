@@ -4,21 +4,16 @@ import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 
 export default function Index() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, initialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (isAuthenticated) {
-        router.replace("/(tabs)/home");
-      } else {
-        router.replace("/auth/login");
-      }
+    if (initialized) {
+      router.replace(isAuthenticated ? "/(tabs)/home" : "/auth/login");
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, initialized]);
 
-  // Optional: Add a loading spinner instead of returning null
-  if (loading) {
+  if (!initialized) {
     return <ActivityIndicator size="large" style={{ flex: 1 }} />;
   }
 

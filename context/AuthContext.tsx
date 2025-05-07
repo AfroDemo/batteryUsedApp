@@ -1,19 +1,18 @@
-import { 
-  AuthContextType, 
-  AuthResponse, 
-  User, 
-  LoginData, 
-  RegisterData 
+import {
+  AuthContextType,
+  AuthResponse,
+  RegisterData,
+  User,
 } from "@/constants/types";
 import api from "@/lib/api";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { 
-  createContext, 
-  useContext, 
-  useEffect, 
-  useMemo, 
-  useState 
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,63 +26,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     token: string | null;
     loading: boolean;
     error: string | null;
+    initialized: boolean;
   }>({
     isAuthenticated: false,
     user: null,
     token: null,
     loading: true,
     error: null,
+    initialized: false,
   });
 
   const router = useRouter();
 
-  const saveToken = async (newToken: string) => {
-    await SecureStore.setItemAsync("token", newToken);
-    setAuthState(prev => ({ ...prev, token: newToken }));
+  const saveAuthData = async (token: string, user: User) => {
+    await SecureStore.setItemAsync("token", token);
+    await SecureStore.setItemAsync("user", JSON.stringify(user));
+    setAuthState(prev => ({
+      ...prev,
+      token,
+      user,
+      isAuthenticated: true
+    }));
   };
 
-  const clearToken = async () => {
+  const clearAuthData = async () => {
     await SecureStore.deleteItemAsync("token");
-    setAuthState(prev => ({ ...prev, token: null }));
+    await SecureStore.deleteItemAsync("user");
+    setAuthState(prev => ({
+      ...prev,
+      token: null,
+      user: null,
+      isAuthenticated: false
+    }));
   };
 
-  const loadToken = async () => {
+  const loadAuthData = async () => {
     try {
-      const storedToken = await SecureStore.getItemAsync("token");
-      if (storedToken) {
-        const response = await api.users.getProfile();
-        setAuthState(prev => ({
-          ...prev,
-          token: storedToken,
-          user: response,
-          isAuthenticated: true,
-        }));
+      const [storedToken, storedUser] = await Promise.all([
+        SecureStore.getItemAsync("token"),
+        SecureStore.getItemAsync("user"),
+      ]);
+
+      if (storedToken && storedUser) {
+        const user = JSON.parse(storedUser);
+        // Verify token is still valid
+        const isValid = await verifyToken(storedToken);
+        
+        if (isValid) {
+          setAuthState({
+            isAuthenticated: true,
+            user,
+            token: storedToken,
+            loading: false,
+            error: null,
+            initialized: true,
+          });
+          return;
+        }
       }
-    } catch (error: any) {
-      console.error("Failed to load user profile", error);
-      await clearToken();
-    } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
+      
+      // If no valid token/user found
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: false,
+        loading: false,
+        initialized: true,
+      }));
+    } catch (error) {
+      console.error("Failed to load auth data:", error);
+      setAuthState(prev => ({
+        ...prev,
+        isAuthenticated: false,
+        loading: false,
+        initialized: true,
+      }));
+    }
+  };
+
+  const verifyToken = async (token: string): Promise<boolean> => {
+    try {
+      await api.auth.verifyToken(); // Assuming you have this endpoint
+      return true;
+    } catch (error) {
+      return false;
     }
   };
 
   useEffect(() => {
-    loadToken();
+    loadAuthData();
   }, []);
 
   const login = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const response: AuthResponse = await api.auth.login({ email, password });
-      await saveToken(response.token);
+      
+      if (!response?.token || !response?.user) {
+        throw new Error("Invalid response from server");
+      }
+
+      await saveAuthData(response.token, response.user);
+      
       setAuthState(prev => ({
         ...prev,
-        user: response.user,
         isAuthenticated: true,
+        user: response.user,
+        error: null,
       }));
+      
       router.replace("/(tabs)/home");
     } catch (error: any) {
-      const errorMessage = error.message || "Login failed";
+      let errorMessage = "Login failed. Please try again.";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       setAuthState(prev => ({ ...prev, error: errorMessage }));
       throw error;
     } finally {
@@ -95,15 +155,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const response: AuthResponse = await api.auth.register(data);
-      await saveToken(response.token);
+      
+      if (!response?.token || !response?.user) {
+        throw new Error("Invalid response from server");
+      }
+
+      await saveAuthData(response.token, response.user);
+      
       setAuthState(prev => ({
         ...prev,
-        user: response.user,
         isAuthenticated: true,
+        user: response.user,
+        error: null,
       }));
+      
       router.replace("/(tabs)/home");
     } catch (error: any) {
-      const errorMessage = error.message || "Registration failed";
+      let errorMessage = "Registration failed. Please try again.";
+      
+      if (error?.response?.data?.errors) {
+        const backendErrors = Object.values(error.response.data.errors).flat();
+        errorMessage = backendErrors.join("\n");
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
       setAuthState(prev => ({ ...prev, error: errorMessage }));
       throw error;
     } finally {
@@ -116,14 +194,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await api.auth.logout();
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout error:", error);
     } finally {
-      setAuthState(prev => ({
-        ...prev,
-        isAuthenticated: false,
-        user: null,
-      }));
-      await clearToken();
+      await clearAuthData();
       router.replace("/auth/login");
       setAuthState(prev => ({ ...prev, loading: false }));
     }
@@ -138,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <AuthContext.Provider value={value}>
-      {!authState.loading && children}
+      {authState.initialized ? children : null}
     </AuthContext.Provider>
   );
 };

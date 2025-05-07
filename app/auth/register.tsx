@@ -20,32 +20,85 @@ export default function RegisterScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password_confirmation, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  // Remove local isLoading state
   const [error, setError] = useState<string | null>(null);
-  const { register, loading: isAuthLoading } = useAuth(); // Get register function and loading state
+  const [submitting, setSubmitting] = useState(false);
+  const { register } = useAuth();
 
   const handleRegister = async () => {
     setError(null);
+    setSubmitting(true);
 
-    // Basic validation
-    if (!name || !email || !password || !confirmPassword) {
+    // Enhanced validation
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !password.trim() ||
+      !password_confirmation.trim()
+    ) {
       setError("Please fill in all fields");
+      setSubmitting(false);
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (name.length < 2 || name.length > 50) {
+      setError("Name must be between 2-50 characters");
+      setSubmitting(false);
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      setSubmitting(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setError("Password must contain at least one uppercase letter");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!/[0-9]/.test(password)) {
+      setError("Password must contain at least one number");
+      setSubmitting(false);
+      return;
+    }
+
+    if (password !== password_confirmation) {
       setError("Passwords do not match");
+      setSubmitting(false);
       return;
     }
 
     try {
-      await register({ name, email, password });
-      // router.replace("/(tabs)"); // Navigation handled in AuthContext
+      await register({ name, email, password,password_confirmation });
+      // Success - navigation is handled in AuthContext
     } catch (err: any) {
-      setError(err?.message || "Registration failed. Please try again.");
+      let errorMessage = "Registration failed. Please try again.";
+
+      if (err?.response?.data?.errors) {
+        const backendErrors = Object.values(err.response.data.errors).flat();
+        errorMessage = backendErrors.join("\n");
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      console.error("Registration error:", err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -53,14 +106,17 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          activeOpacity={0.8}
         >
           <ArrowLeft size={24} color="#1E293B" />
         </TouchableOpacity>
@@ -71,6 +127,7 @@ export default function RegisterScreen() {
               uri: "https://images.pexels.com/photos/3829227/pexels-photo-3829227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
             }}
             style={styles.logo}
+            resizeMode="cover"
           />
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
@@ -88,10 +145,12 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your full name"
+              placeholderTextColor="#94A3B8"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
               autoComplete="name"
+              returnKeyType="next"
             />
           </View>
 
@@ -100,11 +159,13 @@ export default function RegisterScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your email"
+              placeholderTextColor="#94A3B8"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
+              returnKeyType="next"
             />
           </View>
 
@@ -114,15 +175,18 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Create a password"
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoComplete="password-new"
+                returnKeyType="next"
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeButton}
+                activeOpacity={0.7}
               >
                 {showPassword ? (
                   <EyeOff size={20} color="#64748B" />
@@ -139,15 +203,19 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Confirm your password"
-                value={confirmPassword}
+                placeholderTextColor="#94A3B8"
+                value={password_confirmation}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
                 autoCapitalize="none"
                 autoComplete="password-new"
+                returnKeyType="done"
+                onSubmitEditing={handleRegister}
               />
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.eyeButton}
+                activeOpacity={0.7}
               >
                 {showConfirmPassword ? (
                   <EyeOff size={20} color="#64748B" />
@@ -161,16 +229,17 @@ export default function RegisterScreen() {
           <Button
             title="Create Account"
             onPress={handleRegister}
-            loading={isAuthLoading} // Use loading state from AuthContext
+            loading={submitting}
             style={styles.button}
             icon={<ArrowRight size={20} color="white" />}
             iconPosition="right"
+            disabled={submitting}
           />
 
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>Already have an account?</Text>
             <Link href="/auth/login" asChild>
-              <TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7}>
                 <Text style={styles.loginLink}>Sign in</Text>
               </TouchableOpacity>
             </Link>
@@ -189,6 +258,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    paddingBottom: 40,
   },
   backButton: {
     width: 40,
@@ -199,13 +269,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 1.0,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   header: {
     alignItems: "center",
@@ -269,7 +336,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   button: {
-    marginTop: 8,
+    marginTop: 16,
     marginBottom: 24,
   },
   errorContainer: {
@@ -296,8 +363,8 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
   loginLink: {
-    fontFamily: "Inter-Medium",
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
-    color: "#1E40AF",
+    color: "#3B82F6",
   },
 });

@@ -20,23 +20,48 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  // Remove local isLoading state
   const [error, setError] = useState<string | null>(null);
-  const { login, loading: isAuthLoading } = useAuth(); // Get login function and loading state from context
+  const [submitting, setSubmitting] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     setError(null);
+    setSubmitting(true);
 
-    // Basic validation
-    if (!email || !password) {
+    // Enhanced validation
+    if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields");
+      setSubmitting(false);
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      setSubmitting(false);
       return;
     }
 
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err?.message || "Invalid email or password");
+      // Enhanced error parsing
+      let errorMessage = "Login failed. Please try again.";
+
+      if (err?.response?.data?.errors) {
+        const backendErrors = Object.values(err.response.data.errors).flat();
+        errorMessage = backendErrors.join("\n");
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      console.error("Login error:", err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -44,10 +69,12 @@ export default function LoginScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
           <Image
@@ -55,6 +82,7 @@ export default function LoginScreen() {
               uri: "https://images.pexels.com/photos/3829227/pexels-photo-3829227.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
             }}
             style={styles.logo}
+            resizeMode="cover"
           />
           <Text style={styles.title}>Welcome back</Text>
           <Text style={styles.subtitle}>Sign in to your account</Text>
@@ -72,11 +100,13 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="Enter your email"
+              placeholderTextColor="#94A3B8"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
+              returnKeyType="next"
             />
           </View>
 
@@ -86,15 +116,19 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.passwordInput}
                 placeholder="Enter your password"
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoComplete="password"
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.eyeButton}
+                activeOpacity={0.7}
               >
                 {showPassword ? (
                   <EyeOff size={20} color="#64748B" />
@@ -105,23 +139,26 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-          </TouchableOpacity>
+          <Link href="/auth/login" asChild>
+            <TouchableOpacity style={styles.forgotPassword} activeOpacity={0.7}>
+              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+            </TouchableOpacity>
+          </Link>
 
           <Button
             title="Sign In"
             onPress={handleLogin}
-            loading={isAuthLoading} // Use the loading state from AuthContext
+            loading={submitting}
             style={styles.button}
             icon={<ArrowRight size={20} color="white" />}
             iconPosition="right"
+            disabled={submitting}
           />
 
           <View style={styles.registerContainer}>
             <Text style={styles.registerText}>Don't have an account?</Text>
             <Link href="/auth/register" asChild>
-              <TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.7}>
                 <Text style={styles.registerLink}>Sign up</Text>
               </TouchableOpacity>
             </Link>
@@ -141,6 +178,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 24,
+    paddingBottom: 40,
   },
   header: {
     alignItems: "center",
@@ -210,7 +248,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontFamily: "Inter-Medium",
     fontSize: 14,
-    color: "#1E40AF",
+    color: "#3B82F6",
   },
   button: {
     marginBottom: 24,
@@ -239,8 +277,8 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
   registerLink: {
-    fontFamily: "Inter-Medium",
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
-    color: "#1E40AF",
+    color: "#3B82F6",
   },
 });
