@@ -36,3 +36,37 @@ export interface UserProfile {
       // Add other user fields as needed
     };
   }
+
+  export interface AuthContextType {
+    isAuthenticated: boolean;
+    user: any | null; // Adjust type as needed
+    token: string | null;
+    login: (email: string, password: string) => Promise<void>;
+    register: (data: {
+      name: string;
+      email: string;
+      password: string;
+    }) => Promise<void>;
+    logout: () => Promise<void>;
+    loading: boolean;
+  }
+  export interface User {
+    id: string;
+    name: string;
+    email: string;
+  }
+  
+  export interface AuthContextType {
+    isAuthenticated: boolean;
+    user: User | null;
+    token: string | null;
+    login: (email: string, password: string) => Promise<void>;
+    register: (data: {
+      name: string;
+      email: string;
+      password: string;
+    }) => Promise<void>;
+    logout: () => Promise<void>;
+    loading: boolean;
+    error: string | null;
+  }
