@@ -105,6 +105,8 @@ export const products = {
     api.post(`/products/${productId}/favorite`),
 };
 
+
+
 // Cart endpoints
 export const cart = {
   get: () => api.get("/cart"),
