@@ -9,22 +9,11 @@ import Animated, {
   withSequence,
   runOnJS
 } from 'react-native-reanimated';
-import { Card } from './Card';
-
-export interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  price: number;
-  originalPrice?: number;
-  compatibility: string;
-  capacityPercentage: number;
-  imageUrl: string;
-  isFavorite?: boolean;
-}
+import { Card } from './Card'
+import { Battery } from '@/constants/types';
 
 interface ProductCardProps {
-  product: Product;
+  product: Battery;
   onFavoriteToggle?: (id: string) => void;
 }
 
@@ -105,7 +94,7 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
         
         <View style={styles.footer}>
           <View style={styles.priceContainer}>
-            <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+            <Text style={styles.price}>${product.price}</Text>
             {product.originalPrice && (
               <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
             )}

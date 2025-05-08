@@ -1,6 +1,7 @@
 import {
   ApiError,
   AuthResponse,
+  HomePageData,
   LoginData,
   PasswordChangeData,
   RegisterData,
@@ -105,8 +106,6 @@ export const products = {
     api.post(`/products/${productId}/favorite`),
 };
 
-
-
 // Cart endpoints
 export const cart = {
   get: () => api.get("/cart"),
@@ -140,10 +139,15 @@ export const orders = {
   getById: (id: string) => api.get(`/orders/${id}`),
 };
 
+export const home = {
+  getHomeData: (): Promise<HomePageData> => api.get("/home"),
+};
+
 export default {
   auth,
   users,
   products,
   cart,
   orders,
+  home,
 };

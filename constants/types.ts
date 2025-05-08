@@ -18,6 +18,15 @@ export interface UserProfile extends User {
   };
 }
 
+export interface HomePageBanner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  image_url: string;
+  link_url?: string;
+  type: 'primary' | 'secondary' | 'promotional';
+}
+
 export interface LoginData {
   email: string;
   password: string;
@@ -60,6 +69,10 @@ export interface Category {
 }
 
 export interface Battery {
+  isFavorite: boolean;
+  capacityPercentage: number;
+  originalPrice: any;
+  imageUrl: string | undefined;
   id: number;
   name: string;
   brand: string;
