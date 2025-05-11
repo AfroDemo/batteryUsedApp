@@ -1,7 +1,5 @@
 import {
   ApiError,
-  AuthResponse,
-  HomePageData,
   LoginData,
   PasswordChangeData,
   RegisterData,
@@ -57,73 +55,94 @@ api.interceptors.response.use(
 
 // Auth endpoints
 export const auth = {
-  login: (data: LoginData): Promise<AuthResponse> =>
-    api.post("/auth/login", data),
-
-  register: (data: RegisterData): Promise<AuthResponse> =>
-    api.post("/auth/register", data),
-
-  logout: (): Promise<{ success: boolean }> => api.post("/auth/logout"),
-
-  forgotPassword: (email: string): Promise<{ success: boolean }> =>
+  login: (data: LoginData) => api.post("/auth/login", data),
+  register: (data: RegisterData) => api.post("/auth/register", data),
+  logout: () => api.post("/auth/logout"),
+  forgotPassword: (email: string) =>
     api.post("/auth/forgot-password", { email }),
-
-  verifyToken: (): Promise<{ valid: boolean }> => api.get("/auth/verify-token"),
-
-  adminDashboard: (): Promise<{
-    total_users: number;
-    total_batteries: number;
-    total_orders: number;
-    total_revenue: number;
-    recent_users: Array<{ id: string; name: string; email: string; role: string; created_at: string }>;
-    recent_orders: Array<any>;
-  }> => api.get("/auth/admin/dashboard"),
+  verifyToken: () => api.get("/auth/verify-token"),
+  adminDashboard: () => api.get("/auth/admin/dashboard"),
 };
 
 // User endpoints
 export const users = {
-  getProfile: (): Promise<UserProfile> => api.get("/users/profile"),
-
-  updateProfile: (data: Partial<UserProfile>): Promise<UserProfile> =>
-    api.put("/users/profile", data),
-
-  changePassword: (data: PasswordChangeData): Promise<{ success: boolean }> =>
+  getProfile: () => api.get("/auth/profile"),
+  updateProfile: (data: Partial<UserProfile>) => api.put("/auth/profile", data),
+  changePassword: (data: PasswordChangeData) =>
     api.put("/users/password", data),
-
-  deleteAccount: (): Promise<{ success: boolean }> =>
-    api.delete("/users/account"),
+  deleteAccount: () => api.delete("/users/account"),
 };
 
 // Products endpoints
 export const products = {
   getAll: (params?: {
-    search?: string;
+    query?: string;
+    brand?: string;
     category?: string;
-    sort?: string;
+    min_price?: number;
+    max_price?: number;
+    min_capacity_percentage?: number;
+    is_featured?: boolean;
+    compatibility?: string;
+    sort_by?:
+      | "price"
+      | "created_at"
+      | "capacity_percentage"
+      | "discount_percentage";
+    sort_direction?: "asc" | "desc";
     page?: number;
-    limit?: number;
-  }) => api.get("/products", { params }),
-
-  getById: (id: string) => api.get(`/products/${id}`),
-
-  getFavorites: () => api.get("/products/favorites"),
-
-  toggleFavorite: (productId: string) =>
-    api.post(`/products/${productId}/favorite`),
+    per_page?: number;
+  }) => api.get("/search", { params }),
+  getById: (id: string) => api.get(`/batteries/${id}`),
+  create: (data: {
+    name: string;
+    brand: string;
+    price: number;
+    original_price?: number;
+    compatibility?: string[];
+    capacity_percentage?: number;
+    capacity?: string;
+    voltage?: string;
+    warranty?: string;
+    description?: string;
+    features?: string[];
+    image_url?: string;
+    category_id?: number;
+    is_featured?: boolean;
+  }) => api.post("/batteries", data),
+  update: (
+    id: string,
+    data: {
+      name: string;
+      brand: string;
+      price: number;
+      original_price?: number;
+      compatibility?: string[];
+      capacity_percentage?: number;
+      capacity?: string;
+      voltage?: string;
+      warranty?: string;
+      description?: string;
+      features?: string[];
+      image_url?: string;
+      category_id?: number;
+      is_featured?: boolean;
+    }
+  ) => api.put(`/batteries/${id}`, data),
+  delete: (id: string) => api.delete(`/batteries/${id}`),
+  getBrands: () => api.get("/brands"),
+  getByBrand: (brand: string) => api.get(`/batteries/brand/${brand}`),
+  getCompatible: (device: string) => api.get(`/batteries/compatible/${device}`),
 };
 
 // Cart endpoints
 export const cart = {
   get: () => api.get("/cart"),
-
   addItem: (productId: string, quantity: number) =>
     api.post("/cart/items", { productId, quantity }),
-
   updateItem: (productId: string, quantity: number) =>
     api.put(`/cart/items/${productId}`, { quantity }),
-
   removeItem: (productId: string) => api.delete(`/cart/items/${productId}`),
-
   clear: () => api.delete("/cart"),
 };
 
@@ -139,14 +158,13 @@ export const orders = {
       country: string;
     };
   }) => api.post("/orders", data),
-
   getAll: () => api.get("/orders"),
-
   getById: (id: string) => api.get(`/orders/${id}`),
 };
 
+// Home endpoint
 export const home = {
-  getHomeData: (): Promise<HomePageData> => api.get("/home"),
+  getHomeData: () => api.get("/home"),
 };
 
 export default {

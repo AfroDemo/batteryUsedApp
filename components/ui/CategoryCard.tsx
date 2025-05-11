@@ -1,59 +1,67 @@
-import React from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Card } from './Card';
-
-export interface Category {
-  id: string;
-  name: string;
-  image_url: string;
-  count: number;
-}
+import { Category } from "@/constants/types";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import { Card } from "./Card";
 
 interface CategoryCardProps {
   category: Category;
-  variant?: 'horizontal' | 'vertical';
+  variant?: "horizontal" | "vertical";
 }
 
-export function CategoryCard({ category, variant = 'vertical' }: CategoryCardProps) {
+export function CategoryCard({
+  category,
+  variant = "vertical",
+}: CategoryCardProps) {
   const router = useRouter();
-  
-  const isHorizontal = variant === 'horizontal';
+
+  const isHorizontal = variant === "horizontal";
 
   return (
-    <Card 
+    <Card
       style={[
-        styles.card, 
-        isHorizontal ? styles.horizontalCard : styles.verticalCard
+        styles.card,
+        isHorizontal ? styles.horizontalCard : styles.verticalCard,
       ]}
-      onPress={() => router.push(`/category/${category.id}`)}
+      onPress={() => router.push(`/browse?category=${category.id}`)}
       elevation="sm"
+      accessibilityLabel={`View ${category.name} batteries`}
+      accessibilityRole="button"
     >
-      <View style={[
-        styles.container,
-        isHorizontal ? styles.horizontalContainer : styles.verticalContainer
-      ]}>
-        <View style={[
-          styles.imageContainer,
-          isHorizontal ? styles.horizontalImageContainer : styles.verticalImageContainer
-        ]}>
-          <Image 
-            source={{ uri: category.image_url }} 
-            style={styles.image}
-          />
+      <View
+        style={[
+          styles.container,
+          isHorizontal ? styles.horizontalContainer : styles.verticalContainer,
+        ]}
+      >
+        <View
+          style={[
+            styles.imageContainer,
+            isHorizontal
+              ? styles.horizontalImageContainer
+              : styles.verticalImageContainer,
+          ]}
+        >
+          {category.image_url ? (
+            <Image source={{ uri: category.image_url }} style={styles.image} />
+          ) : (
+            <View style={styles.placeholderImage} />
+          )}
         </View>
-        
-        <View style={[
-          styles.content,
-          isHorizontal ? styles.horizontalContent : styles.verticalContent
-        ]}>
-          <Text 
-            style={styles.name}
-            numberOfLines={isHorizontal ? 1 : 2}
-          >
+
+        <View
+          style={[
+            styles.content,
+            isHorizontal ? styles.horizontalContent : styles.verticalContent,
+          ]}
+        >
+          <Text style={styles.name} numberOfLines={isHorizontal ? 1 : 2}>
             {category.name}
           </Text>
-          <Text style={styles.count}>{category.count} products</Text>
+          <Text style={styles.count}>
+            {category.batteries_count}{" "}
+            {category.batteries_count === 1 ? "Battery" : "Batteries"}
+          </Text>
         </View>
       </View>
     </Card>
@@ -62,7 +70,7 @@ export function CategoryCard({ category, variant = 'vertical' }: CategoryCardPro
 
 const styles = StyleSheet.create({
   card: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   verticalCard: {
     width: 120,
@@ -70,7 +78,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   horizontalCard: {
-    width: '100%',
+    width: "100%",
     height: 80,
     marginBottom: 12,
   },
@@ -78,53 +86,58 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   verticalContainer: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   horizontalContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   imageContainer: {
-    backgroundColor: '#F1F5F9',
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F1F5F9",
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
   verticalImageContainer: {
     height: 100,
-    width: '100%',
+    width: "100%",
   },
   horizontalImageContainer: {
     width: 80,
-    height: '100%',
+    height: "100%",
   },
   image: {
-    width: '80%',
-    height: '80%',
-    resizeMode: 'contain',
+    width: "80%",
+    height: "80%",
+    resizeMode: "contain",
+  },
+  placeholderImage: {
+    width: "80%",
+    height: "80%",
+    backgroundColor: "#E2E8F0",
   },
   content: {
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   verticalContent: {
     flex: 1,
     padding: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   horizontalContent: {
     flex: 1,
     padding: 12,
   },
   name: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
     fontSize: 14,
-    color: '#1E293B',
-    textAlign: 'center',
+    color: "#1E293B",
+    textAlign: "center",
   },
   count: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 12,
-    color: '#64748B',
+    color: "#64748B",
     marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

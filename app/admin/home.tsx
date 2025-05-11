@@ -11,6 +11,7 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,7 +29,7 @@ type Stat = {
   icon: JSX.Element;
 };
 
-export default function AdminDashboard() {
+export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { width } = useWindowDimensions();
@@ -37,52 +38,62 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDashboardData = async () => {
+    if (user?.role !== "admin") return;
+
+    try {
+      const data = await api.auth.adminDashboard();
+      const newStats: Stat[] = [
+        {
+          title: "Total Products",
+          value: data.total_batteries.toString(),
+          change: "+12%", // Placeholder; see notes for dynamic calculation
+          trend: "up",
+          icon: <Package size={24} color="#1E40AF" />,
+        },
+        {
+          title: "Active Users",
+          value: data.total_users.toString(),
+          change: "+8%", // Placeholder
+          trend: "up",
+          icon: <Users size={24} color="#1E40AF" />,
+        },
+        {
+          title: "Orders Today",
+          value: data.total_orders.toString(), // Could filter for today on backend
+          change: "-3%", // Placeholder
+          trend: "down",
+          icon: <ShoppingBag size={24} color="#1E40AF" />,
+        },
+        {
+          title: "Revenue",
+          value: `$${data.total_revenue.toFixed(2)}`,
+          change: "+18%", // Placeholder
+          trend: "up",
+          icon: <TrendingUp size={24} color="#1E40AF" />,
+        },
+      ];
+      setStats(newStats);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load dashboard data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    if (user?.role === "admin") {
-      api.auth
-        .adminDashboard()
-        .then((data) => {
-          const newStats: Stat[] = [
-            {
-              title: "Total Products",
-              value: data.total_batteries.toString(),
-              change: "+12%", // Placeholder; see notes for dynamic calculation
-              trend: "up",
-              icon: <Package size={24} color="#1E40AF" />,
-            },
-            {
-              title: "Active Users",
-              value: data.total_users.toString(),
-              change: "+8%", // Placeholder
-              trend: "up",
-              icon: <Users size={24} color="#1E40AF" />,
-            },
-            {
-              title: "Orders Today",
-              value: data.total_orders.toString(), // Could filter for today on backend
-              change: "-3%", // Placeholder
-              trend: "down",
-              icon: <ShoppingBag size={24} color="#1E40AF" />,
-            },
-            {
-              title: "Revenue",
-              value: `$${data.total_revenue.toFixed(2)}`,
-              change: "+18%", // Placeholder
-              trend: "up",
-              icon: <TrendingUp size={24} color="#1E40AF" />,
-            },
-          ];
-          setStats(newStats);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError("Failed to load dashboard data");
-          setLoading(false);
-          console.error(err);
-        });
-    }
+    fetchDashboardData();
   }, [user]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchDashboardData();
+  };
 
   const quickActions = [
     {
@@ -119,7 +130,12 @@ export default function AdminDashboard() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
       <View style={styles.header}>
         <Text style={styles.greeting}>Welcome back, Admin!</Text>
         <Text style={styles.subtitle}>Here's what's happening today</Text>

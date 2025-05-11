@@ -24,7 +24,7 @@ export interface HomePageBanner {
   subtitle?: string;
   image_url: string;
   link_url?: string;
-  type: 'primary' | 'secondary' | 'promotional';
+  type: "primary" | "secondary" | "promotional";
 }
 
 export interface LoginData {
@@ -63,34 +63,37 @@ export interface AuthContextType {
 export interface Category {
   id: number;
   name: string;
-  slug: string;
-  image_url: string;
+  image_url?: string;
   batteries_count: number;
 }
 
 export interface Battery {
-  isFavorite: boolean;
-  capacityPercentage: number;
-  originalPrice: any;
-  image_url: string | undefined;
   id: number;
   name: string;
   brand: string;
-  description: string;
-  price: string;
-  original_price?: string | null;
-  discount_percentage: number;
-  is_on_sale: boolean;
+  description?: string;
+  price: string; // String due to comma formatting
+  originalPrice?: string; // String due to comma formatting
+  discount_percentage?: number;
+  is_on_sale?: boolean;
   is_featured: boolean;
-  image_url: string;
-  compatibility?: string | null;
-  capacity: string;
-  voltage: string;
-  warranty: string;
-  features: string[];
-  capacity_percentage: number;
-  category: Category;
-  created_at: string;
+  image_url?: string;
+  compatibility?: string[];
+  capacity?: string;
+  voltage?: string;
+  warranty?: string;
+  features?: string[];
+  capacity_percentage?: number;
+  category?: Category;
+  is_active: boolean;
+  reviews?: Array<{
+    id: number;
+    rating: number;
+    comment: string;
+    user: { id: string; name: string };
+  }>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BatterySearchParams {
@@ -99,9 +102,9 @@ export interface BatterySearchParams {
   category?: string;
   min_price?: number;
   max_price?: number;
-  min_capacity?: number;
-  max_capacity?: number;
-  is_on_sale?: boolean;
+  min_capacity_percentage?: number;
+  is_featured?: boolean;
+  compatibility?: string;
   sort_by?:
     | "price"
     | "created_at"
@@ -118,11 +121,13 @@ export interface PaginatedResponse<T> {
   total_pages: number;
   total_items: number;
   per_page: number;
+  next_page_url?: string;
+  prev_page_url?: string;
 }
 
 export interface HomePageData {
-  featured_batteries: Battery[];
-  discounted_batteries: Battery[];
+  featured_batteries: PaginatedResponse<Battery>;
+  discounted_batteries: PaginatedResponse<Battery>;
   categories: Category[];
 }
 
@@ -132,14 +137,14 @@ export interface OrderItem {
   battery_id: number;
   battery: Battery;
   quantity: number;
-  price: string;
-  subtotal: string;
+  price: number;
+  subtotal: number;
 }
 
 export interface Order {
   id: number;
   user_id: number;
-  total_amount: string;
+  total_amount: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   items: OrderItem[];
   created_at: string;
@@ -156,7 +161,7 @@ export interface CartItem {
 export interface Cart {
   items: CartItem[];
   total_items: number;
-  total_price: string;
+  total_price: number;
 }
 
 // Error Handling

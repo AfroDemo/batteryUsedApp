@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }));
 
       router.replace(
-        response.user.role === "admin" ? "/(admin)" : "/(tabs)/home"
+        response.user.role === "admin" ? "/admin/home" : "/(tabs)/home"
       );
     } catch (error: any) {
       let errorMessage = "Login failed. Please try again.";
@@ -170,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }));
 
       router.replace(
-        response.user.role === "admin" ? "/(admin)" : "/(tabs)/home"
+        response.user.role === "admin" ? "/admin/home" : "/(tabs)/home"
       );
     } catch (error: any) {
       let errorMessage = "Registration failed. Please try again.";

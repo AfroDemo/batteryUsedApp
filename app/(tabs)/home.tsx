@@ -2,6 +2,10 @@ import { CartIcon } from "@/components/CartIcon";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryCard } from "@/components/ui/CategoryCard";
 import { ProductCard } from "@/components/ui/ProductCard";
+import { ApiError, Battery, Category } from "@/constants/types";
+import { useCart } from "@/context/CartContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import api from "@/lib/api";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -13,11 +17,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// import { BATTERIES, CATEGORIES } from '@/constants/mockData';
-import { ApiError, Battery, Category } from "@/constants/types";
-import { useCart } from "@/context/CartContext";
-import { useFavorites } from "@/context/FavoritesContext";
-import api from "@/lib/api";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -26,7 +25,7 @@ export default function HomeScreen() {
   const { itemCount } = useCart();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
-  const [CATEGORIES, setCATEGORIES] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [featuredProducts, setFeaturedProducts] = useState<Battery[]>([]);
   const [discountedProducts, setDiscountedProducts] = useState<Battery[]>([]);
 
@@ -34,7 +33,7 @@ export default function HomeScreen() {
     (query: string) => {
       setSearchQuery(query);
       if (query.trim().length > 0) {
-        router.push(`/browse?search=${query}`);
+        router.push(`/browse?query=${encodeURIComponent(query)}`);
       }
     },
     [router]
@@ -50,10 +49,11 @@ export default function HomeScreen() {
   const fetchHomeData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await api.home.getHomeData();
-      setCATEGORIES(data.categories);
-      setDiscountedProducts(data.discounted_batteries);
-      setFeaturedProducts(data.featured_batteries);
+      setCategories(data.categories || []);
+      setFeaturedProducts(data.featured_batteries || []);
+      setDiscountedProducts(data.discounted_batteries?.data || []);
     } catch (err) {
       setError(err as ApiError);
     } finally {
@@ -80,10 +80,12 @@ export default function HomeScreen() {
           {error.message || "An error occurred while fetching data"}
         </Text>
         <TouchableOpacity
-          onPress={() => fetchHomeData()}
+          onPress={fetchHomeData}
           style={styles.retryButton}
+          accessibilityLabel="Retry loading data"
+          accessibilityRole="button"
         >
-          <Text>Retry</Text>
+          <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -104,61 +106,58 @@ export default function HomeScreen() {
 
         {/* Categories Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Categories</Text>
+          <Text style={styles.sectionTitle}>Brands</Text>
           <TouchableOpacity
             onPress={() => router.push("/browse")}
-            accessibilityLabel="View all categories"
+            accessibilityLabel="View all brands"
             accessibilityRole="button"
           >
             <Text style={styles.seeAllButton}>See All</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}
-        >
-          {CATEGORIES.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </ScrollView>
+        {categories.length === 0 ? (
+          <Text style={styles.emptyStateText}>No brands available</Text>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContainer}
+          >
+            {categories.map((category) => (
+              <CategoryCard key={category.id} category={category} />
+            ))}
+          </ScrollView>
+        )}
 
         {/* Featured Products */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Featured Products</Text>
-          <TouchableOpacity onPress={() => router.push("/browse")}>
+          <TouchableOpacity
+            onPress={() => router.push("/browse?is_featured=true")}
+            accessibilityLabel="View all featured products"
+            accessibilityRole="button"
+          >
             <Text style={styles.seeAllButton}>See All</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.productsContainer}>
-          {featuredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onFavoriteToggle={handleFavoriteToggle}
-            />
-          ))}
-        </View>
-
-        {/* Discounted Products */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Special Deals</Text>
-          <TouchableOpacity onPress={() => router.push("/browse?deals=true")}>
-            <Text style={styles.seeAllButton}>See All</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.productsContainer}>
-          {discountedProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onFavoriteToggle={handleFavoriteToggle}
-            />
-          ))}
-        </View>
+        {featuredProducts.length === 0 ? (
+          <Text style={styles.emptyStateText}>
+            No featured products available
+          </Text>
+        ) : (
+          <View style={styles.productsContainer}>
+            {featuredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onFavoriteToggle={handleFavoriteToggle}
+                isFavorite={isFavorite(product.id.toString())}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -226,18 +225,28 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   errorText: {
-    color: "red",
+    fontFamily: "Inter-Regular",
+    fontSize: 16,
+    color: "#EF4444",
     textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
     backgroundColor: "#1E40AF",
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
   },
+  retryButtonText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
   emptyStateText: {
-    textAlign: "center",
+    fontFamily: "Inter-Regular",
+    fontSize: 16,
     color: "#64748B",
+    textAlign: "center",
     marginVertical: 16,
   },
 });

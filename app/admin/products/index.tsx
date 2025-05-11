@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,34 +12,51 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Search,
-  Filter,
 } from 'lucide-react-native';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { SearchBar } from '../../../components/SearchBar';
-import { BATTERIES } from '../../../constants/mockData';
+import api from '@/lib/api';
+
+type Battery = {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  quantity: number;
+};
 
 export default function ManageProducts() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState(BATTERIES);
+  const [products, setProducts] = useState<Battery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      const filtered = BATTERIES.filter(
-        (product) =>
-          product.name.toLowerCase().includes(query.toLowerCase()) ||
-          product.brand.toLowerCase().includes(query.toLowerCase())
-      );
-      setProducts(filtered);
-    } else {
-      setProducts(BATTERIES);
+  const fetchProducts = async (query: string = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.products.getAll({ search: query || undefined });
+      setProducts(response.data); // Assumes paginated response with { data: [...] }
+    } catch (err: any) {
+      setError('Failed to load products');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (productId: string) => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    fetchProducts(query);
+  };
+
+  const handleDelete = async (productId: string) => {
     Alert.alert(
       'Delete Product',
       'Are you sure you want to delete this product?',
@@ -51,14 +68,41 @@ export default function ManageProducts() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            // Implement delete logic here
-            setProducts(products.filter((p) => p.id !== productId));
+          onPress: async () => {
+            try {
+              await api.products.delete(productId);
+              setProducts(products.filter((p) => p.id !== productId));
+              Alert.alert('Success', 'Product deleted successfully');
+            } catch (err: any) {
+              Alert.alert('Error', 'Failed to delete product');
+              console.error(err);
+            }
           },
         },
       ]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading products...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button
+          title="Retry"
+          onPress={() => fetchProducts(searchQuery)}
+          style={styles.retryButton}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -66,6 +110,7 @@ export default function ManageProducts() {
         <SearchBar
           placeholder="Search products..."
           onSearch={handleSearch}
+          value={searchQuery}
         />
         <Button
           title="Add Product"
@@ -83,15 +128,17 @@ export default function ManageProducts() {
               <Text style={styles.productBrand}>{product.brand}</Text>
               <View style={styles.productMeta}>
                 <Text style={styles.productPrice}>
-                  ${product.price.toFixed(2)}
+                  ${product.price}
                 </Text>
                 <View
                   style={[
                     styles.stockIndicator,
-                    { backgroundColor: '#22C55E' },
+                    { backgroundColor: product.quantity > 0 ? '#22C55E' : '#EF4444' },
                   ]}
                 />
-                <Text style={styles.stockText}>In Stock</Text>
+                <Text style={styles.stockText}>
+                  {product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                </Text>
               </View>
             </View>
 
@@ -191,5 +238,31 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#FEE2E2',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  loadingText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: '#1E293B',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  errorText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: '#EF4444',
+    marginBottom: 16,
+  },
+  retryButton: {
+    width: 120,
   },
 });
