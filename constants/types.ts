@@ -68,32 +68,28 @@ export interface Category {
 }
 
 export interface Battery {
-  id: number;
+  id: string;
   name: string;
   brand: string;
-  description?: string;
-  price: string; // String due to comma formatting
-  originalPrice?: string; // String due to comma formatting
-  discount_percentage?: number;
-  is_on_sale?: boolean;
+  price: string;
+  original_price?: string;
+  compatibility: string;
+  capacity_percentage: number;
+  capacity: string;
+  voltage: string;
+  warranty: string;
+  description: string;
+  features: string; // JSON string
+  image_url: string;
   is_featured: boolean;
-  image_url?: string;
-  compatibility?: string[];
-  capacity?: string;
-  voltage?: string;
-  warranty?: string;
-  features?: string[];
-  capacity_percentage?: number;
-  category?: Category;
-  is_active: boolean;
-  reviews?: Array<{
+  is_on_sale: boolean;
+  created_at: string;
+  category: {
     id: number;
-    rating: number;
-    comment: string;
-    user: { id: string; name: string };
-  }>;
-  created_at?: string;
-  updated_at?: string;
+    name: string;
+    slug: string;
+    image_url: string;
+  };
 }
 
 export interface BatterySearchParams {

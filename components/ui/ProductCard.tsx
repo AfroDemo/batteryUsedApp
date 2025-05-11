@@ -1,4 +1,5 @@
 import { Battery } from "@/constants/types";
+import { useFavorites } from "@/context/FavoritesContext";
 import { useRouter } from "expo-router";
 import { Heart } from "lucide-react-native";
 import React from "react";
@@ -19,9 +20,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
   const router = useRouter();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const heartScale = useSharedValue(1);
-  const [isFavorite, setIsFavorite] = React.useState(
-    product.isFavorite || false
+  const [isFavoriteState, setIsFavoriteState] = React.useState(
+    isFavorite(product.id)
   );
 
   const animatedHeartStyle = useAnimatedStyle(() => {
@@ -30,29 +32,42 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
     };
   });
 
-  const handleFavoritePress = () => {
+  const handleFavoritePress = async () => {
     heartScale.value = withSequence(
       withTiming(1.3, { duration: 150 }),
       withTiming(1, { duration: 150 }, () => {
-        runOnJS(toggleFavorite)();
+        runOnJS(toggleFavoriteState)();
       })
     );
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    if (onFavoriteToggle) {
-      onFavoriteToggle(product.id);
+  const toggleFavoriteState = async () => {
+    try {
+      await toggleFavorite(product.id);
+      setIsFavoriteState(!isFavoriteState);
+      if (onFavoriteToggle) {
+        onFavoriteToggle(product.id);
+      }
+    } catch (err) {
+      // Error is handled in FavoritesProvider via Alert
     }
   };
 
   const getBatteryHealthColor = () => {
-    if (product.capacity_percentage >= 85) return "#22C55E"; // Green for good
-    if (product.capacity_percentage >= 70) return "#FACC15"; // Yellow for okay
-    return "#EF4444"; // Red for poor
+    if (product.capacity_percentage >= 85) return "#22C55E";
+    if (product.capacity_percentage >= 70) return "#FACC15";
+    return "#EF4444";
   };
 
-  console.log(product.capacity_percentage)
+  const getDiscountPercentage = () => {
+    if (!product.original_price) return null;
+    const originalPrice = parseFloat(product.original_price.replace(/,/g, ""));
+    const price = parseFloat(product.price.replace(/,/g, ""));
+    const discount = ((originalPrice - price) / originalPrice) * 100;
+    return Math.round(discount);
+  };
+
+  const discountPercentage = getDiscountPercentage();
 
   return (
     <Card
@@ -61,9 +76,9 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: product.image_url }} style={styles.image} />
-        {product.discount_percentage && (
+        {discountPercentage && (
           <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>-{product.discount_percentage}%</Text>
+            <Text style={styles.discountText}>-{discountPercentage}%</Text>
           </View>
         )}
         <TouchableOpacity
@@ -74,8 +89,8 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
           <Animated.View style={animatedHeartStyle}>
             <Heart
               size={22}
-              color={isFavorite ? "#F43F5E" : "#94A3B8"}
-              fill={isFavorite ? "#F43F5E" : "transparent"}
+              color={isFavoriteState ? "#F43F5E" : "#94A3B8"}
+              fill={isFavoriteState ? "#F43F5E" : "transparent"}
             />
           </Animated.View>
         </TouchableOpacity>
@@ -96,8 +111,10 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
         <View style={styles.footer}>
           <View style={styles.priceContainer}>
             <Text style={styles.price}>${product.price}</Text>
-            {product.originalPrice && (
-              <Text style={styles.originalPrice}>${product.originalPrice}</Text>
+            {product.original_price && (
+              <Text style={styles.originalPrice}>
+                ${product.original_price}
+              </Text>
             )}
           </View>
 
@@ -118,7 +135,7 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
   );
 }
 
-// Styles remain unchanged
+// Styles (unchanged)
 const styles = StyleSheet.create({
   card: {
     width: "100%",
@@ -174,7 +191,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1E293B",
     marginBottom: 8,
-    height: 44, // Limit to 2 lines
+    height: 44,
   },
   compatibility: {
     backgroundColor: "#F1F5F9",

@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import { favorite } from '@/lib/api';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 
 interface FavoritesContextType {
   favorites: string[];
-  toggleFavorite: (productId: string) => void;
+  toggleFavorite: (productId: string) => Promise<void>;
   isFavorite: (productId: string) => boolean;
-  clearFavorites: () => void;
+  clearFavorites: () => Promise<void>;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
@@ -12,13 +14,36 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(undefin
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  const toggleFavorite = (productId: string) => {
-    if (favorites.includes(productId)) {
-      // Remove from favorites
-      setFavorites(favorites.filter(id => id !== productId));
-    } else {
-      // Add to favorites
-      setFavorites([...favorites, productId]);
+  // Fetch initial favorites
+  useEffect(() => {
+    async function fetchFavorites() {
+      try {
+        const favoriteData = await favorite.get();
+        // Extract product IDs from response
+        const favoriteIds = favoriteData.map((item: any) => item.id);
+        setFavorites(favoriteIds);
+      } catch (err: any) {
+        console.error('Failed to fetch favorites:', err);
+        Alert.alert('Error', err.message || 'Failed to load favorites. Please try again.');
+      }
+    }
+    fetchFavorites();
+  }, []);
+
+  const toggleFavorite = async (productId: string) => {
+    try {
+      if (favorites.includes(productId)) {
+        // Remove from favorites
+        await favorite.remove(productId);
+        setFavorites(favorites.filter((id) => id !== productId));
+      } else {
+        // Add to favorites
+        await favorite.add(productId);
+        setFavorites([...favorites, productId]);
+      }
+    } catch (err: any) {
+      console.error('Toggle favorite error:', err);
+      Alert.alert('Error', err.message || 'Failed to update favorites');
     }
   };
 
@@ -26,17 +51,25 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     return favorites.includes(productId);
   };
 
-  const clearFavorites = () => {
-    setFavorites([]);
+  const clearFavorites = async () => {
+    try {
+      await favorite.clear(); // Corrected to use favorite.clear()
+      setFavorites([]);
+    } catch (err: any) {
+      console.error('Clear favorites error:', err);
+      Alert.alert('Error', err.message || 'Failed to clear favorites');
+    }
   };
 
   return (
-    <FavoritesContext.Provider value={{
-      favorites,
-      toggleFavorite,
-      isFavorite,
-      clearFavorites
-    }}>
+    <FavoritesContext.Provider
+      value={{
+        favorites,
+        toggleFavorite,
+        isFavorite,
+        clearFavorites,
+      }}
+    >
       {children}
     </FavoritesContext.Provider>
   );

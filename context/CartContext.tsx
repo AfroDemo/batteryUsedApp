@@ -1,21 +1,21 @@
+import { cart } from '@/lib/api';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { BATTERIES } from '../constants/mockData';
 
 interface CartItem {
   id: string;
   name: string;
-  price: number;
-  imageUrl: string;
+  price: string; // e.g., "4,000.00"
+  image_url: string;
   quantity: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (productId: string, quantity?: number) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  clearCart: () => void;
+  addToCart: (productId: string, quantity?: number) => Promise<void>;
+  removeFromCart: (productId: string) => Promise<void>;
+  updateQuantity: (productId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   itemCount: number;
   totalPrice: number;
 }
@@ -27,78 +27,91 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [itemCount, setItemCount] = useState(0);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // Fetch initial cart state
+  useEffect(() => {
+    async function fetchCart() {
+      try {
+        const cartData = await cart.get();
+        // cart.get returns an array of items
+        setItems(cartData || []);
+      } catch (err: any) {
+        console.error('Failed to fetch cart:', err);
+        Alert.alert('Error', err.message || 'Failed to load cart. Please try again.');
+      }
+    }
+    fetchCart();
+  }, []);
+
   // Update totals when items change
   useEffect(() => {
     const count = items.reduce((sum, item) => sum + item.quantity, 0);
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
+    const total = items.reduce(
+      (sum, item) => sum + parseFloat(item.price.replace(/,/g, '')) * item.quantity,
+      0
+    );
     setItemCount(count);
     setTotalPrice(total);
   }, [items]);
 
-  const addToCart = (productId: string, quantity = 1) => {
-    // Find product in our data
-    const product = BATTERIES.find(b => b.id === productId);
-    if (!product) {
-      Alert.alert('Error', 'Product not found');
-      return;
-    }
-
-    // Check if the item is already in the cart
-    const existingItemIndex = items.findIndex(item => item.id === productId);
-
-    if (existingItemIndex !== -1) {
-      // Item exists, update quantity
-      const updatedItems = [...items];
-      updatedItems[existingItemIndex].quantity += quantity;
-      setItems(updatedItems);
-    } else {
-      // Item doesn't exist, add it
-      const newItem: CartItem = {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        imageUrl: product.imageUrl,
-        quantity: quantity
-      };
-      setItems([...items, newItem]);
+  const addToCart = async (productId: string, quantity = 1) => {
+    try {
+      await cart.addItem(productId, quantity);
+      const cartData = await cart.get();
+      setItems(cartData || []);
+    } catch (err: any) {
+      console.error('Add to cart error:', err);
+      Alert.alert('Error', err.message || 'Failed to add item to cart');
     }
   };
 
-  const removeFromCart = (productId: string) => {
-    setItems(items.filter(item => item.id !== productId));
+  const removeFromCart = async (productId: string) => {
+    try {
+      await cart.removeItem(productId);
+      const cartData = await cart.get();
+      setItems(cartData || []);
+    } catch (err: any) {
+      console.error('Remove from cart error:', err);
+      Alert.alert('Error', err.message || 'Failed to remove item from cart');
+    }
   };
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    const updatedItems = items.map(item => {
-      if (item.id === productId) {
-        return { ...item, quantity };
+  const updateQuantity = async (productId: string, quantity: number) => {
+    try {
+      if (quantity <= 0) {
+        await removeFromCart(productId);
+        return;
       }
-      return item;
-    });
-
-    setItems(updatedItems);
+      await cart.updateItem(productId, quantity);
+      const cartData = await cart.get();
+      setItems(cartData || []);
+    } catch (err: any) {
+      console.error('Update quantity error:', err);
+      Alert.alert('Error', err.message || 'Failed to update cart');
+    }
   };
 
-  const clearCart = () => {
-    setItems([]);
+  const clearCart = async () => {
+    try {
+      await cart.clear();
+      setItems([]);
+    } catch (err: any) {
+      console.error('Clear cart error:', err);
+      Alert.alert('Error', err.message || 'Failed to clear cart');
+    }
   };
 
   return (
-    <CartContext.Provider value={{
-      items,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      itemCount,
-      totalPrice
-    }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        itemCount,
+        totalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

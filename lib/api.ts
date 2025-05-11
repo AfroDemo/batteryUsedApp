@@ -1,3 +1,4 @@
+// src/api/index.ts
 import {
   ApiError,
   LoginData,
@@ -16,6 +17,7 @@ const api = axios.create({
   },
 });
 
+// Request interceptor (unchanged)
 api.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync("token");
@@ -32,6 +34,7 @@ api.interceptors.request.use(
   }
 );
 
+// Response interceptor (unchanged)
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -53,7 +56,7 @@ api.interceptors.response.use(
   }
 );
 
-// Auth endpoints
+// Auth endpoints (unchanged)
 export const auth = {
   login: (data: LoginData) => api.post("/auth/login", data),
   register: (data: RegisterData) => api.post("/auth/register", data),
@@ -64,7 +67,7 @@ export const auth = {
   adminDashboard: () => api.get("/auth/admin/dashboard"),
 };
 
-// User endpoints
+// User endpoints (unchanged)
 export const users = {
   getProfile: () => api.get("/auth/profile"),
   updateProfile: (data: Partial<UserProfile>) => api.put("/auth/profile", data),
@@ -73,7 +76,7 @@ export const users = {
   deleteAccount: () => api.delete("/users/account"),
 };
 
-// Products endpoints
+// Products endpoints (unchanged)
 export const products = {
   getAll: (params?: {
     query?: string;
@@ -135,7 +138,7 @@ export const products = {
   getCompatible: (device: string) => api.get(`/batteries/compatible/${device}`),
 };
 
-// Cart endpoints
+// Cart endpoints (unchanged)
 export const cart = {
   get: () => api.get("/cart"),
   addItem: (productId: string, quantity: number) =>
@@ -146,7 +149,7 @@ export const cart = {
   clear: () => api.delete("/cart"),
 };
 
-// Orders endpoints
+// Orders endpoints (unchanged)
 export const orders = {
   create: (data: {
     items: Array<{ productId: string; quantity: number }>;
@@ -162,9 +165,17 @@ export const orders = {
   getById: (id: string) => api.get(`/orders/${id}`),
 };
 
-// Home endpoint
+// Home endpoint (unchanged)
 export const home = {
   getHomeData: () => api.get("/home"),
+};
+
+// Favorites endpoints
+export const favorite = {
+  get: () => api.get("/favorites"),
+  add: (productId: string) => api.post("/favorites", { productId }),
+  remove: (productId: string) => api.delete(`/favorites/${productId}`),
+  clear: () => api.delete("/favorites"),
 };
 
 export default {
@@ -174,4 +185,5 @@ export default {
   cart,
   orders,
   home,
+  favorite,
 };
