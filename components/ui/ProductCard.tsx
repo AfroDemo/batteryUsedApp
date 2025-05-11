@@ -61,7 +61,7 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
   return (
     <Card onPress={() => router.push(`/product/${product.id}`)} style={styles.card}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: product.imageUrl }} style={styles.image} />
+        <Image source={{ uri: product.image_url }} style={styles.image} />
         {discountPercentage && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{discountPercentage}%</Text>

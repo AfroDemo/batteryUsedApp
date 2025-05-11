@@ -1,4 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 import { useFrameworkReady } from "@/hooks/useFrameworkReady";
 import {
   Inter_400Regular,
@@ -36,29 +38,40 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="auto" />
-      <Stack>
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false,
-            animation: 'fade'
-          }} 
-        />
-        <Stack.Screen 
-          name="auth" 
-          options={{ 
-            headerShown: false,
-            animation: 'slide_from_right' 
-          }} 
-        />
-        <Stack.Screen 
-          name="+not-found" 
-          options={{ 
-            animation: 'fade' 
-          }} 
-        />
-      </Stack>
+      <FavoritesProvider>
+        <CartProvider>
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+                animation: "fade",
+              }}
+            />
+            <Stack.Screen
+              name="admin"
+              options={{
+                headerShown: false,
+                animation: "fade",
+              }}
+            />
+            <Stack.Screen
+              name="auth"
+              options={{
+                headerShown: false,
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="+not-found"
+              options={{
+                animation: "fade",
+              }}
+            />
+          </Stack>
+        </CartProvider>
+      </FavoritesProvider>
     </AuthProvider>
   );
 }

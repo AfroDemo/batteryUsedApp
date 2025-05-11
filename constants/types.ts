@@ -72,7 +72,7 @@ export interface Battery {
   isFavorite: boolean;
   capacityPercentage: number;
   originalPrice: any;
-  imageUrl: string | undefined;
+  image_url: string | undefined;
   id: number;
   name: string;
   brand: string;

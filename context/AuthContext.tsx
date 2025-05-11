@@ -41,22 +41,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const saveAuthData = async (token: string, user: User) => {
     await SecureStore.setItemAsync("token", token);
     await SecureStore.setItemAsync("user", JSON.stringify(user));
-    setAuthState(prev => ({
+    setAuthState((prev) => ({
       ...prev,
       token,
       user,
-      isAuthenticated: true
+      isAuthenticated: true,
     }));
   };
 
   const clearAuthData = async () => {
     await SecureStore.deleteItemAsync("token");
     await SecureStore.deleteItemAsync("user");
-    setAuthState(prev => ({
+    setAuthState((prev) => ({
       ...prev,
       token: null,
       user: null,
-      isAuthenticated: false
+      isAuthenticated: false,
     }));
   };
 
@@ -69,9 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (storedToken && storedUser) {
         const user = JSON.parse(storedUser);
-        // Verify token is still valid
         const isValid = await verifyToken(storedToken);
-        
+
         if (isValid) {
           setAuthState({
             isAuthenticated: true,
@@ -84,9 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return;
         }
       }
-      
-      // If no valid token/user found
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isAuthenticated: false,
         loading: false,
@@ -94,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }));
     } catch (error) {
       console.error("Failed to load auth data:", error);
-      setAuthState(prev => ({
+      setAuthState((prev) => ({
         ...prev,
         isAuthenticated: false,
         loading: false,
@@ -105,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const verifyToken = async (token: string): Promise<boolean> => {
     try {
-      await api.auth.verifyToken(); // Assuming you have this endpoint
+      await api.auth.verifyToken();
       return true;
     } catch (error) {
       return false;
@@ -117,62 +115,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (email: string, password: string) => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response: AuthResponse = await api.auth.login({ email, password });
-      
+
       if (!response?.token || !response?.user) {
         throw new Error("Invalid response from server");
       }
 
       await saveAuthData(response.token, response.user);
-      
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isAuthenticated: true,
         user: response.user,
         error: null,
       }));
-      
-      router.replace("/(tabs)/home");
+
+      router.replace(
+        response.user.role === "admin" ? "/(admin)" : "/(tabs)/home"
+      );
     } catch (error: any) {
       let errorMessage = "Login failed. Please try again.";
-      
+
       if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.message) {
         errorMessage = error.message;
       }
 
-      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      setAuthState((prev) => ({ ...prev, error: errorMessage }));
       throw error;
     } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
+      setAuthState((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const register = async (data: RegisterData) => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const response: AuthResponse = await api.auth.register(data);
-      
+
       if (!response?.token || !response?.user) {
         throw new Error("Invalid response from server");
       }
 
       await saveAuthData(response.token, response.user);
-      
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isAuthenticated: true,
         user: response.user,
         error: null,
       }));
-      
-      router.replace("/(tabs)/home");
+
+      router.replace(
+        response.user.role === "admin" ? "/(admin)" : "/(tabs)/home"
+      );
     } catch (error: any) {
       let errorMessage = "Registration failed. Please try again.";
-      
+
       if (error?.response?.data?.errors) {
         const backendErrors = Object.values(error.response.data.errors).flat();
         errorMessage = backendErrors.join("\n");
@@ -182,15 +184,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         errorMessage = error.message;
       }
 
-      setAuthState(prev => ({ ...prev, error: errorMessage }));
+      setAuthState((prev) => ({ ...prev, error: errorMessage }));
       throw error;
     } finally {
-      setAuthState(prev => ({ ...prev, loading: false }));
+      setAuthState((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const logout = async () => {
-    setAuthState(prev => ({ ...prev, loading: true }));
+    setAuthState((prev) => ({ ...prev, loading: true }));
     try {
       await api.auth.logout();
     } catch (error) {
@@ -198,16 +200,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       await clearAuthData();
       router.replace("/auth/login");
-      setAuthState(prev => ({ ...prev, loading: false }));
+      setAuthState((prev) => ({ ...prev, loading: false }));
     }
   };
 
-  const value = useMemo(() => ({
-    ...authState,
-    login,
-    register,
-    logout,
-  }), [authState]);
+  const value = useMemo(
+    () => ({
+      ...authState,
+      login,
+      register,
+      logout,
+    }),
+    [authState]
+  );
 
   return (
     <AuthContext.Provider value={value}>

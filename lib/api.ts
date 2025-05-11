@@ -11,7 +11,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const api = axios.create({
-  baseURL: "http://192.168.1.122:8001/api",
+  baseURL: "http://192.168.22.4:8001/api",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -34,7 +34,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -44,12 +43,10 @@ api.interceptors.response.use(
     };
 
     if (error.response) {
-      // Server responded with error status
       apiError.message = error.response.data?.message || error.message;
       apiError.status = error.response.status;
       apiError.errors = error.response.data?.errors;
     } else if (error.request) {
-      // Request was made but no response
       apiError.message = "No response from server";
       apiError.status = 0;
     }
@@ -72,6 +69,15 @@ export const auth = {
     api.post("/auth/forgot-password", { email }),
 
   verifyToken: (): Promise<{ valid: boolean }> => api.get("/auth/verify-token"),
+
+  adminDashboard: (): Promise<{
+    total_users: number;
+    total_batteries: number;
+    total_orders: number;
+    total_revenue: number;
+    recent_users: Array<{ id: string; name: string; email: string; role: string; created_at: string }>;
+    recent_orders: Array<any>;
+  }> => api.get("/auth/admin/dashboard"),
 };
 
 // User endpoints

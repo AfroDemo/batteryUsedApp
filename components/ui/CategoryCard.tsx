@@ -6,7 +6,7 @@ import { Card } from './Card';
 export interface Category {
   id: string;
   name: string;
-  imageUrl: string;
+  image_url: string;
   count: number;
 }
 
@@ -38,7 +38,7 @@ export function CategoryCard({ category, variant = 'vertical' }: CategoryCardPro
           isHorizontal ? styles.horizontalImageContainer : styles.verticalImageContainer
         ]}>
           <Image 
-            source={{ uri: category.imageUrl }} 
+            source={{ uri: category.image_url }} 
             style={styles.image}
           />
         </View>

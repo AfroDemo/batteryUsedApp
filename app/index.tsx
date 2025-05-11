@@ -4,14 +4,18 @@ import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 
 export default function Index() {
-  const { isAuthenticated, initialized } = useAuth();
+  const { isAuthenticated, initialized, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (initialized) {
-      router.replace(isAuthenticated ? "/(tabs)/home" : "/auth/login");
+      if (isAuthenticated) {
+        router.replace(
+          user?.role === "admin" ? "/admin/home" : "/(tabs)/home"
+        );
+      }
     }
-  }, [isAuthenticated, initialized]);
+  }, [isAuthenticated, initialized, user]);
 
   if (!initialized) {
     return <ActivityIndicator size="large" style={{ flex: 1 }} />;
