@@ -181,11 +181,11 @@ export default function ProductDetailScreen() {
 
             <View style={styles.priceContainer}>
               <Text style={styles.price}>
-                ${parseFloat(product.price).toFixed(2)}
+                TzS {parseFloat(product.price).toFixed(2)}
               </Text>
               {product.original_price && (
                 <Text style={styles.originalPrice}>
-                  ${parseFloat(product.original_price).toFixed(2)}
+                  TzS {parseFloat(product.original_price).toFixed(2)}
                 </Text>
               )}
             </View>

@@ -1,4 +1,3 @@
-// src/api/index.ts
 import {
   ApiError,
   LoginData,
@@ -152,17 +151,25 @@ export const cart = {
 // Orders endpoints (unchanged)
 export const orders = {
   create: (data: {
-    items: Array<{ productId: string; quantity: number }>;
-    shippingAddress: {
+    batteries: Array<{ id: string; quantity: number }>;
+    shipping_address: {
       street: string;
       city: string;
       state: string;
       zipCode: string;
       country: string;
     };
+    payment_method: "bank" | "mobile_money";
   }) => api.post("/orders", data),
-  getAll: () => api.get("/orders"),
+  getAll: (params?: {
+    query?: string;
+    status?: string;
+    page?: number;
+    per_page?: number;
+  }) => api.get("/orders", { params }),
   getById: (id: string) => api.get(`/orders/${id}`),
+  update: (id: string, data: { status: "pending" | "completed" }) =>
+    api.put(`/orders/${id}`, data),
 };
 
 // Home endpoint (unchanged)

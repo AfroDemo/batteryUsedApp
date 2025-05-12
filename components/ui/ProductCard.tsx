@@ -110,10 +110,10 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
 
         <View style={styles.footer}>
           <View style={styles.priceContainer}>
-            <Text style={styles.price}>${product.price}</Text>
+            <Text style={styles.price}>TzS {product.price}</Text>
             {product.original_price && (
               <Text style={styles.originalPrice}>
-                ${product.original_price}
+                TzS {product.original_price}
               </Text>
             )}
           </View>

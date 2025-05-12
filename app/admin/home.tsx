@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   TrendingUp,
   Users,
+  ChevronRight,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,6 +30,14 @@ type Stat = {
   icon: JSX.Element;
 };
 
+type Order = {
+  id: number;
+  buyer: { name: string };
+  total_amount: string;
+  status: string;
+  created_at: string;
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -36,6 +45,7 @@ export default function HomeScreen() {
   const isSmallScreen = width < 768;
 
   const [stats, setStats] = useState<Stat[]>([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,41 +55,43 @@ export default function HomeScreen() {
 
     try {
       const data = await api.auth.adminDashboard();
+
       const newStats: Stat[] = [
         {
           title: "Total Products",
           value: data.total_batteries.toString(),
-          change: "+12%", // Placeholder; see notes for dynamic calculation
+          change: "+12%", // TODO: Calculate dynamically from historical data
           trend: "up",
           icon: <Package size={24} color="#1E40AF" />,
         },
         {
           title: "Active Users",
           value: data.total_users.toString(),
-          change: "+8%", // Placeholder
+          change: "+8%",
           trend: "up",
           icon: <Users size={24} color="#1E40AF" />,
         },
         {
           title: "Orders Today",
-          value: data.total_orders.toString(), // Could filter for today on backend
-          change: "-3%", // Placeholder
+          value: data.total_orders.toString(),
+          change: "-3%",
           trend: "down",
           icon: <ShoppingBag size={24} color="#1E40AF" />,
         },
         {
           title: "Revenue",
-          value: `$${data.total_revenue.toFixed(2)}`,
-          change: "+18%", // Placeholder
+          value: `$${parseFloat(data.total_revenue).toFixed(2)}`, // Parse string to number
+          change: "+18%",
           trend: "up",
           icon: <TrendingUp size={24} color="#1E40AF" />,
         },
       ];
       setStats(newStats);
+      setRecentOrders(data.recent_orders || []); // Set recent orders
       setError(null);
     } catch (err) {
       setError("Failed to load dashboard data");
-      console.error(err);
+      console.error("Dashboard error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -113,6 +125,35 @@ export default function HomeScreen() {
     },
   ];
 
+  // Render a single order item
+  const renderOrderItem = (order: Order) => (
+    <TouchableOpacity
+      key={order.id}
+      style={styles.orderItem}
+      onPress={() => router.push(`/orders/${order.id}`)}
+    >
+      <View style={styles.orderDetails}>
+        <Text style={styles.orderId}>Order #{order.id}</Text>
+        <Text style={styles.orderBuyer}>Buyer: {order.buyer.name}</Text>
+        <Text style={styles.orderDate}>
+          {new Date(order.created_at).toLocaleDateString()}
+        </Text>
+        <Text style={styles.orderTotal}>
+          Total: TzS {parseFloat(order.total_amount).toFixed(2)}
+        </Text>
+        <Text
+          style={[
+            styles.orderStatus,
+            { color: order.status === "pending" ? "#F59E0B" : "#10B981" },
+          ]}
+        >
+          Status: {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+        </Text>
+      </View>
+      <ChevronRight size={20} color="#94A3B8" />
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -125,6 +166,12 @@ export default function HomeScreen() {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          onPress={handleRefresh}
+          style={styles.retryButton}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -185,6 +232,22 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <Text style={styles.sectionTitle}>Recent Orders</Text>
+      <Card style={styles.ordersCard}>
+        {recentOrders.length === 0 ? (
+          <Text style={styles.noOrdersText}>No recent orders found</Text>
+        ) : (
+          recentOrders.map(renderOrderItem)
+        )}
+      </Card>
+
+      <TouchableOpacity
+        style={styles.viewAllButton}
+        onPress={() => router.push("/admin/orders")}
+      >
+        <Text style={styles.viewAllText}>View All Orders</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -260,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 32,
   },
   actionCard: {
     marginBottom: 16,
@@ -276,6 +339,68 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     marginTop: 8,
     textAlign: "center",
+  },
+  ordersCard: {
+    padding: 0,
+    overflow: "hidden",
+    marginBottom: 16,
+  },
+  orderItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  orderDetails: {
+    flex: 1,
+  },
+  orderId: {
+    fontFamily: "Inter-SemiBold",
+    fontSize: 14,
+    color: "#1E293B",
+    marginBottom: 4,
+  },
+  orderBuyer: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  orderDate: {
+    fontFamily: "Inter-Regular",
+    fontSize: 12,
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  orderTotal: {
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+    color: "#1E293B",
+    marginBottom: 4,
+  },
+  orderStatus: {
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+  },
+  noOrdersText: {
+    fontFamily: "Inter-Regular",
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+    padding: 16,
+  },
+  viewAllButton: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  viewAllText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    color: "#1E40AF",
   },
   loadingContainer: {
     flex: 1,
@@ -298,5 +423,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Regular",
     fontSize: 16,
     color: "#EF4444",
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: "#1E40AF",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 14,
+    color: "white",
   },
 });

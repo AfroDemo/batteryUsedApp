@@ -149,9 +149,11 @@ export interface Order {
 
 // Cart-related Types
 export interface CartItem {
-  battery_id: number;
-  battery: Battery;
+  id: string;
+  name: string;
+  price: string;
   quantity: number;
+  imageUrl: string;
 }
 
 export interface Cart {

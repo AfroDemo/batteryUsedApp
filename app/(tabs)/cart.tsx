@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { useCart } from "@/context/CartContext";
+import { useRouter } from "expo-router";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Alert,
   Image,
-  Alert
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react-native';
-import { useCart } from '@/context/CartContext';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function CartScreen() {
   const router = useRouter();
-  const { items, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, totalPrice } =
+    useCart();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleQuantityChange = (id: string, quantity: number) => {
@@ -31,37 +32,19 @@ export default function CartScreen() {
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
         },
-        { 
-          text: "Remove", 
+        {
+          text: "Remove",
           onPress: () => removeFromCart(id),
-          style: "destructive"
-        }
+          style: "destructive",
+        },
       ]
     );
   };
 
   const handleCheckout = () => {
-    setIsProcessing(true);
-    
-    // Simulate processing
-    setTimeout(() => {
-      Alert.alert(
-        "Order Placed!",
-        "Your order has been successfully placed.",
-        [
-          { 
-            text: "OK", 
-            onPress: () => {
-              clearCart();
-              router.push('/home');
-            }
-          }
-        ]
-      );
-      setIsProcessing(false);
-    }, 2000);
+    router.push("/checkout");
   };
 
   return (
@@ -75,43 +58,50 @@ export default function CartScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         {items.length > 0 ? (
           <View style={styles.content}>
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
             >
               {items.map((item) => (
                 <Card key={item.id} style={styles.cartItem}>
                   <View style={styles.cartItemContent}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-                    
+                    <Image
+                      source={{ uri: item.image_url }}
+                      style={styles.itemImage}
+                    />
                     <View style={styles.itemDetails}>
-                      <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-                      <Text style={styles.itemPrice}>${item.price}</Text>
-                      
+                      <Text style={styles.itemName} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.itemPrice}>TzS {item.price}</Text>
                       <View style={styles.quantityContainer}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.quantityButton}
-                          onPress={() => handleQuantityChange(item.id, item.quantity - 1)}
+                          onPress={() =>
+                            handleQuantityChange(item.id, item.quantity - 1)
+                          }
                           disabled={item.quantity <= 1}
                         >
-                          <Minus size={16} color={item.quantity <= 1 ? "#CBD5E1" : "#64748B"} />
+                          <Minus
+                            size={16}
+                            color={item.quantity <= 1 ? "#CBD5E1" : "#64748B"}
+                          />
                         </TouchableOpacity>
-                        
                         <Text style={styles.quantityText}>{item.quantity}</Text>
-                        
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={styles.quantityButton}
-                          onPress={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          onPress={() =>
+                            handleQuantityChange(item.id, item.quantity + 1)
+                          }
                         >
                           <Plus size={16} color="#64748B" />
                         </TouchableOpacity>
                       </View>
                     </View>
-                    
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => handleRemoveItem(item.id)}
                     >
@@ -121,25 +111,28 @@ export default function CartScreen() {
                 </Card>
               ))}
             </ScrollView>
-            
+
             <View style={styles.summaryContainer}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Subtotal</Text>
-                <Text style={styles.summaryValue}>${totalPrice}</Text>
+                <Text style={styles.summaryValue}>
+                  TzS {totalPrice.toFixed(2)}
+                </Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Shipping</Text>
-                <Text style={styles.summaryValue}>$0.00</Text>
+                <Text style={styles.summaryValue}>FREE</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.summaryRow}>
                 <Text style={styles.totalLabel}>Total</Text>
-                <Text style={styles.totalValue}>${totalPrice}</Text>
+                <Text style={styles.totalValue}>
+                  TzS {totalPrice.toFixed(2)}
+                </Text>
               </View>
-              
-              <Button 
-                title="Proceed to Checkout" 
-                onPress={handleCheckout} 
+              <Button
+                title="Proceed to Checkout"
+                onPress={handleCheckout}
                 style={styles.checkoutButton}
                 loading={isProcessing}
               />
@@ -152,9 +145,9 @@ export default function CartScreen() {
             <Text style={styles.emptyStateText}>
               Add batteries to your cart to see them here
             </Text>
-            <Button 
-              title="Browse Products" 
-              onPress={() => router.push('/browse')} 
+            <Button
+              title="Browse Products"
+              onPress={() => router.push("/browse")}
               style={styles.browseButton}
             />
           </View>
@@ -167,32 +160,32 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: "#F8FAFC",
   },
   container: {
     flex: 1,
     padding: 16,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
     marginTop: 8,
   },
   title: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 20,
-    color: '#1E293B',
+    color: "#1E293B",
   },
   clearButton: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 14,
-    color: '#EF4444',
+    color: "#EF4444",
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   scrollContent: {
     paddingBottom: 16,
@@ -202,14 +195,14 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   cartItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   itemImage: {
     width: 80,
     height: 80,
-    resizeMode: 'contain',
-    backgroundColor: '#F1F5F9',
+    resizeMode: "contain",
+    backgroundColor: "#F1F5F9",
     borderRadius: 8,
   },
   itemDetails: {
@@ -217,46 +210,46 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   itemName: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 16,
-    color: '#1E293B',
+    color: "#1E293B",
     marginBottom: 4,
   },
   itemPrice: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
-    color: '#1E40AF',
+    color: "#1E40AF",
     marginBottom: 8,
   },
   quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   quantityButton: {
     width: 28,
     height: 28,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: "#F1F5F9",
     borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   quantityText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 14,
-    color: '#1E293B',
+    color: "#1E293B",
     marginHorizontal: 12,
     width: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   removeButton: {
     padding: 8,
   },
   summaryContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
-    marginTop: 'auto',
-    shadowColor: '#000',
+    marginTop: "auto",
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -266,56 +259,56 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   summaryLabel: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 14,
-    color: '#64748B',
+    color: "#64748B",
   },
   summaryValue: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: "Inter-Medium",
     fontSize: 14,
-    color: '#1E293B',
+    color: "#1E293B",
   },
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: "#E2E8F0",
     marginVertical: 8,
   },
   totalLabel: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
     fontSize: 16,
-    color: '#1E293B',
+    color: "#1E293B",
   },
   totalValue: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: "Inter-Bold",
     fontSize: 18,
-    color: '#1E40AF',
+    color: "#1E40AF",
   },
   checkoutButton: {
     marginTop: 16,
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 32,
   },
   emptyStateTitle: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: "Inter-SemiBold",
     fontSize: 18,
-    color: '#1E293B',
+    color: "#1E293B",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: "Inter-Regular",
     fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
+    color: "#64748B",
+    textAlign: "center",
     marginBottom: 24,
   },
   browseButton: {
